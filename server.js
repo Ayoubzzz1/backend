@@ -10,20 +10,18 @@ const moment = require('moment');
 const app = express();
 const port = process.env.PORT || 8080;
 
-// Ensure the uploads directory exists
 const uploadDir = "uploads";
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-// CORS configuration
+
 app.use(cors());
 
-// Body-parser configuration
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Multer configuration for file upload
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -53,7 +51,7 @@ db.connect((err) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
-// Route for form submission with file upload for partners
+
 app.post("/submit/partner", upload.single("file"), (req, res) => {
   const {
     detail1,
@@ -89,7 +87,6 @@ app.post("/submit/partner", upload.single("file"), (req, res) => {
   });
 });
 
-// Route for form submission with file upload for events
 app.post("/submit/event", upload.single("file"), (req, res) => {
   const { desc1, desc2, desc3, desc4, area1, area2, area3, check } = req.body;
   const event_file = req.file ? req.file.filename : null;
@@ -162,20 +159,8 @@ app.post("/submit/partner", upload.single("file"), (req, res) => {
   });
 });
 
-// Route for form submission with file upload for events
-app.post("/submit/jobs", (req, res) => {
+app.post('/submit/jobs', (req, res) => {
   const { jbs1, jbs2, jbs3, filed1, filed2, filed3, jobType } = req.body;
-  const event_file = req.file ? req.file.filename : null;
-
-  // Determine the job type based on the radio button selection
-  let jobTypeValue = null;
-  if (jobType === 'internal') {
-    jobTypeValue = 'internal_jobs';
-  } else if (jobType === 'external') {
-    jobTypeValue = 'external_jobs';
-  } else if (jobType === 'referal') {
-    jobTypeValue = 'referal_jobs';
-  }
 
   const newJob = {
     title_jobs: jbs1,
@@ -183,17 +168,44 @@ app.post("/submit/jobs", (req, res) => {
     location_jobs: jbs3,
     description_jobs: filed1,
     benefits_jobs: filed2,
-    job_type: jobTypeValue, // Updated to reflect job type
+    req_jobs: filed3,
   };
 
-  const query = "INSERT INTO jobs SET ?";
+  if (jobType === 'Internal') {
+    newJob.internal_jobs = true;
+    newJob.external_jobs = false;
+    newJob.refferal_jobs = false;
+  } else if (jobType === 'External') {
+    newJob.internal_jobs = false;
+    newJob.external_jobs = true;
+    newJob.refferal_jobs = false;
+  } else if (jobType === 'Referral') {
+    newJob.internal_jobs = false;
+    newJob.external_jobs = false;
+    newJob.refferal_jobs = true;
+  }
+
+  const query = 'INSERT INTO jobs SET ?';
 
   db.query(query, newJob, (err, result) => {
     if (err) {
-      console.error("Error saving data:", err);
-      return res.status(500).send("Error saving data");
+      console.error('Error saving data:', err);
+      return res.status(500).send('Error saving data');
     }
-    res.status(200).send("Data saved successfully");
+    res.status(200).send('Data saved successfully');
+  });
+});
+
+
+app.get("/jobs", (req, res) => {
+  const query = "SELECT * FROM partners";
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching partners data:", err);
+      return res.status(500).send("Error fetching partners data");
+    }
+    res.json(results);
   });
 });
 
@@ -203,8 +215,6 @@ app.post("/submit/jobs", (req, res) => {
 
 
 
-
-// Route for fetching partner data
 app.get("/partners", (req, res) => {
   const query = "SELECT * FROM partners";
 
@@ -229,40 +239,17 @@ app.get("/events", (req, res) => {
   });
 });
 
-
-// app.put("/api/partners/:id", upload.single("file"), (req, res) => {
-//   const id = req.params.id;
-//   const { name, category, address, phone, facebook, website, instagram } =
-//     req.body;
-//   const file = req.file ? req.file.filename : null;
-
-//   let updateQuery = `
-//       UPDATE partners
-//       SET name_part = ?, category_part = ?, address_part = ?, phone_part = ?, fac_part = ?, web_part = ?, insta_part = ?
-//       ${file ? ", file_part = ?" : ""}
-//       WHERE id_part = ?
-//     `;
-
-//   let params = [name, category, address, phone, facebook, website, instagram];
-//   if (file) {
-//     params.push(file);
-//   }
-//   params.push(id);
-
-//   // Execute the query
-//   db.query(updateQuery, params, (err, result) => {
-//     if (err) {
-//       console.error("Error updating partner:", err);
-//       if (err.code === "ER_DUP_ENTRY") {
-//         return res.status(400).send("A partner with this name already exists.");
-//       }
-//       return res.status(500).send("Error updating partner.");
-//     }
-//     res.send("Partner updated successfully.");
-//   });
-// });
-
-// Serve static files for uploaded content
+app.delete('/partners/:id_part', function(req, res){
+  var sql      = 'DELETE FROM partners WHERE id_part = ?';
+  var id_movie = [req.params.id_part];
+  con.query(sql, id_part, function(err){
+      if(err){
+          res.json({"Error": true, "Message": "Error execute sql"});
+      } else {
+          res.json({"Error": false, "Message": "Success"});
+      }
+  });
+});
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(port, () => {
