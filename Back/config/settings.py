@@ -86,7 +86,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",
-    "https://frontend-vert-nine-7yj3nbutd2.vercel.app"
+    "https://frontend-1-seven-sigma.vercel.app"
 ]
 CORS_ALLOW_CREDENTIALS = True
 
